@@ -11,8 +11,15 @@ public class JythonController {
     private JythonService pythonExecutionService;
 
     @PostMapping("/execute")
-    public String executePythonFromMarkdown(@RequestBody String markdownContent) {
-        return pythonExecutionService.executePythonFromMarkdown(markdownContent);
+    public org.springframework.http.ResponseEntity<String> executePythonCode(@RequestBody java.util.Map<String, String> request) {
+        String pythonCode = request.get("pythonCode");
+
+        if (pythonCode == null || pythonCode.isEmpty()) {
+            return org.springframework.http.ResponseEntity.badRequest().body("No Python code provided.");
+        }
+
+        String result = pythonExecutionService.executePythonFromMarkdown(pythonCode);
+        return org.springframework.http.ResponseEntity.ok(result);
     }
 }
 

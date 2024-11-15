@@ -57,6 +57,9 @@
             const preview = document.getElementById("preview");
             textarea.value = markdownContent;
             preview.innerHTML = marked.parse(markdownContent);
+
+            // Add Play buttons next to Python code blocks after rendering
+            addPlayButtons();
         });
 
         // Send updates to the WebSocket server with the token in headers
@@ -70,9 +73,64 @@
     document.getElementById("markdownInput").addEventListener("input", function () {
         const preview = document.getElementById("preview");
         preview.innerHTML = marked.parse(this.value);
+
+        // Add Play buttons next to Python code blocks after rendering
+        addPlayButtons();
     });
+
+    // Function to add Play buttons next to Python code blocks
+    function addPlayButtons() {
+        // Find all python code blocks in the rendered markdown preview
+        const pythonBlocks = document.querySelectorAll('pre code.language-python');
+
+        pythonBlocks.forEach(block => {
+            // Check if a Play button already exists
+            if (!block.nextElementSibling || !block.nextElementSibling.classList.contains('play-button')) {
+                // Create a play button
+                const playButton = document.createElement('button');
+                playButton.textContent = 'Play';
+                playButton.classList.add('play-button');
+                playButton.style.marginLeft = '10px';
+
+                // Add click event to the play button
+                playButton.addEventListener('click', function () {
+                    const pythonCode = block.textContent.trim();
+
+                    if (pythonCode) {
+                        // Make an API request to execute the Python code
+                        executePythonCode(pythonCode);
+                    }
+                });
+
+                // Append the play button next to the Python code block
+                block.parentNode.appendChild(playButton);
+            }
+        });
+    }
+
+    // Function to make an API request to execute the Python code
+    function executePythonCode(pythonCode) {
+        fetch('/api/python/execute', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`  // Add token in the header
+            },
+            body: JSON.stringify({ pythonCode: pythonCode })
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Python code executed:", data);
+                alert(`Execution result: ${data}`);
+            })
+            .catch(error => {
+                console.error("Error executing Python code:", error);
+                alert('Error executing Python code.');
+            });
+    }
     /*]]>*/
 </script>
+
 
 
 </body>
