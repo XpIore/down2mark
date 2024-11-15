@@ -98,7 +98,7 @@
 
                     if (pythonCode) {
                         // Make an API request to execute the Python code
-                        executePythonCode(pythonCode);
+                        executePythonCode(pythonCode, block);
                     }
                 });
 
@@ -109,7 +109,7 @@
     }
 
     // Function to make an API request to execute the Python code
-    function executePythonCode(pythonCode) {
+    function executePythonCode(pythonCode, codeBlock) {
         fetch('/api/python/execute', {
             method: 'POST',
             headers: {
@@ -118,10 +118,31 @@
             },
             body: JSON.stringify({ pythonCode: pythonCode })
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Python code executed:", data);
-                alert(`Execution result: ${data}`);
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to execute Python code');
+                }
+                return response.text(); // Assuming the API returns a plain string
+            })
+            .then(result => {
+                console.log("Python code executed:", result);
+
+                // Check if a result container already exists
+                let resultContainer = codeBlock.parentNode.querySelector('.execution-result');
+                if (!resultContainer) {
+                    // Create a container for the result
+                    resultContainer = document.createElement('div');
+                    resultContainer.classList.add('execution-result');
+                    resultContainer.style.marginTop = '10px';
+                    resultContainer.style.padding = '10px';
+                    resultContainer.style.border = '1px solid #ddd';
+                    resultContainer.style.backgroundColor = '#f4f4f4';
+                    resultContainer.style.whiteSpace = 'pre-wrap'; // Preserve formatting
+                    codeBlock.parentNode.appendChild(resultContainer);
+                }
+
+                // Update the result container content
+                resultContainer.textContent = `Output:\n${result}`;
             })
             .catch(error => {
                 console.error("Error executing Python code:", error);
