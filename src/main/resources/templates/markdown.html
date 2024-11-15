@@ -82,7 +82,6 @@
     function addPlayButtons() {
         // Find all python code blocks in the rendered markdown preview
         const pythonBlocks = document.querySelectorAll('pre code.language-python');
-
         pythonBlocks.forEach(block => {
             // Check if a Play button already exists
             if (!block.nextElementSibling || !block.nextElementSibling.classList.contains('play-button')) {
@@ -91,30 +90,26 @@
                 playButton.textContent = 'Play';
                 playButton.classList.add('play-button');
                 playButton.style.marginLeft = '10px';
-
                 // Add click event to the play button
                 playButton.addEventListener('click', function () {
                     const pythonCode = block.textContent.trim();
-
                     if (pythonCode) {
                         // Make an API request to execute the Python code
-                        executePythonCode(pythonCode, block);
+                        executePythonCode(pythonCode);
                     }
                 });
-
                 // Append the play button next to the Python code block
                 block.parentNode.appendChild(playButton);
             }
         });
     }
 
-    // Function to make an API request to execute the Python code
-    function executePythonCode(pythonCode, codeBlock) {
+    function executePythonCode(pythonCode) {
         fetch('/api/python/execute', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`  // Add token in the header
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({ pythonCode: pythonCode })
         })
@@ -122,33 +117,73 @@
                 if (!response.ok) {
                     throw new Error('Failed to execute Python code');
                 }
-                return response.text(); // Assuming the API returns a plain string
+                return response.text();
             })
             .then(result => {
                 console.log("Python code executed:", result);
 
-                // Check if a result container already exists
-                let resultContainer = codeBlock.parentNode.querySelector('.execution-result');
-                if (!resultContainer) {
-                    // Create a container for the result
-                    resultContainer = document.createElement('div');
-                    resultContainer.classList.add('execution-result');
-                    resultContainer.style.marginTop = '10px';
-                    resultContainer.style.padding = '10px';
-                    resultContainer.style.border = '1px solid #ddd';
-                    resultContainer.style.backgroundColor = '#f4f4f4';
-                    resultContainer.style.whiteSpace = 'pre-wrap'; // Preserve formatting
-                    codeBlock.parentNode.appendChild(resultContainer);
+                const textarea = document.getElementById("markdownInput");
+                const content = textarea.value;
+
+                // Normalize the Python code by trimming whitespace
+                const normalizedPythonCode = pythonCode.trim();
+
+                // Create a regex pattern that matches the code block more flexibly
+                const codeBlockPattern = new RegExp(
+                    `\`\`\`python\\s*${normalizedPythonCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\`\`\``,
+                    'g'
+                );
+
+                console.log("Looking for code block pattern:", codeBlockPattern);
+                console.log("Current textarea content:", content);
+
+                // Find the last match of the code block
+                let lastMatch;
+                let match;
+                while ((match = codeBlockPattern.exec(content)) !== null) {
+                    lastMatch = match;
                 }
 
-                // Update the result container content
-                resultContainer.textContent = `Output:\n${result}`;
+                if (lastMatch) {
+                    console.log("Found code block at position:", lastMatch.index);
+
+                    const insertPosition = lastMatch.index + lastMatch[0].length;
+                    const outputText = `\nOutput: <code>${result}</code>\n`;
+
+                    // Check if output already exists and remove it
+                    const afterCodeBlock = content.substring(insertPosition);
+                    const existingOutputMatch = afterCodeBlock.match(/\nOutput: <code>.*<\/code>\n/);
+
+                    let newContent;
+                    if (existingOutputMatch && existingOutputMatch.index === 0) {
+                        // Replace existing output
+                        newContent = content.substring(0, insertPosition) + outputText +
+                            content.substring(insertPosition + existingOutputMatch[0].length);
+                    } else {
+                        // Insert new output
+                        newContent = content.substring(0, insertPosition) + outputText +
+                            content.substring(insertPosition);
+                    }
+
+                    // Update the textarea
+                    textarea.value = newContent;
+
+                    // Manually trigger the input event for WebSocket sync
+                    const event = new Event('input');
+                    textarea.dispatchEvent(event);
+
+                    console.log("Updated textarea content:", newContent);
+                } else {
+                    console.error("Could not find matching code block in content");
+                    console.log("Python code being searched for:", normalizedPythonCode);
+                }
             })
             .catch(error => {
                 console.error("Error executing Python code:", error);
                 alert('Error executing Python code.');
             });
     }
+
     /*]]>*/
 </script>
 

@@ -1,10 +1,12 @@
 package two.down.bad.guys.down2mark.jython;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/python")
+@Slf4j
 public class JythonController {
 
     @Autowired
@@ -19,6 +21,7 @@ public class JythonController {
         }
 
         String result = pythonExecutionService.executePythonFromMarkdown(pythonCode);
+        log.info("Python code result: " + result);
         return org.springframework.http.ResponseEntity.ok(result);
     }
 }
