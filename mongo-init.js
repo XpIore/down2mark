@@ -23,7 +23,7 @@ db.createCollection("Markdown", {
                     bsonType: "string",
                     description: "Title must be a string and is required"
                 },
-                contentVersionPairs: {
+                autoSave: {
                     bsonType: "array",
                     description: "Must be an array of content-version pairs and is required",
                     items: {
