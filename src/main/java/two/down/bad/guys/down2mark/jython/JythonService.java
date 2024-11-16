@@ -35,10 +35,11 @@ public class JythonService {
 
     private String executePythonCode(String pythonCode) {
         log.info("Executing Python code via ProcessBuilder:\n{}", pythonCode);
+        File tempScript = null;
 
         try {
             // Write Python code to a temporary file
-            File tempScript = File.createTempFile("script", ".py");
+            tempScript = File.createTempFile("script", ".py");
             Files.write(tempScript.toPath(), pythonCode.getBytes(StandardCharsets.UTF_8));
 
             // Execute Python
@@ -60,6 +61,16 @@ public class JythonService {
         } catch (Exception e) {
             log.error("Error executing Python code via ProcessBuilder", e);
             return "Error executing Python code: " + e.getMessage();
+        } finally {
+            if (tempScript != null && tempScript.exists()) {
+                try {
+                    if (!tempScript.delete()) {
+                        log.warn("Failed to delete temporary script file: {}", tempScript.getAbsolutePath());
+                    }
+                } catch (SecurityException e) {
+                    log.error("Security exception while trying to delete temporary script file", e);
+                }
+            }
         }
     }
 

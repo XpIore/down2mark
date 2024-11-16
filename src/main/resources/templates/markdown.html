@@ -22,23 +22,68 @@
             overflow-y: auto;
             background-color: #f9f9f9;
         }
+        .button-container {
+            margin: 10px 0;
+        }
+        .download-button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .download-button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
 <h1>Collaborative Markdown Editor</h1>
 <div>
     <h1>Edit Markdown</h1>
-    <textarea id="markdownInput" th:text="${content}"></textarea> <!-- Inject the content here -->
+    <div class="button-container">
+        <button onclick="downloadMarkdown()" class="download-button">Download Markdown</button>
+    </div>
+    <textarea id="markdownInput" th:text="${content}"></textarea>
     <div id="preview"></div>
 </div>
 <script th:inline="javascript">
     /*<![CDATA[*/
     const token = /*[[${token}]]*/ '';
 
-    console.log("Token:", token);  // Debugging
+    // Add download function
+    function downloadMarkdown() {
+        const textarea = document.getElementById("markdownInput");
+        const content = textarea.value;
+
+        // Create a blob with the markdown content
+        const blob = new Blob([content], { type: 'text/markdown' });
+
+        // Create a temporary link element
+        const link = document.createElement('a');
+
+        // Create a timestamp for the filename
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+
+        // Set link properties
+        link.href = URL.createObjectURL(blob);
+        link.download = `markdown-${timestamp}.md`;
+
+        // Append link to body, click it, and remove it
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up the URL object
+        URL.revokeObjectURL(link.href);
+    }
+
+    console.log("Token:", token);
 
     if (!token) {
-        console.error("Token is missing"); // Stop execution if token is missing
+        console.error("Token is missing");
     }
 
     // WebSocket setup
@@ -48,57 +93,59 @@
     stompClient.connect({}, function () {
         console.log(`Connected with token: ${token}`);
 
-        // Subscribe to the topic based on the token
         stompClient.subscribe(`/topic/${token}`, function (message) {
             const markdownContent = message.body;
 
-            // Update textarea and preview when a message is received
             const textarea = document.getElementById("markdownInput");
             const preview = document.getElementById("preview");
             textarea.value = markdownContent;
             preview.innerHTML = marked.parse(markdownContent);
 
-            // Add Play buttons next to Python code blocks after rendering
             addPlayButtons();
         });
 
-        // Send updates to the WebSocket server with the token in headers
         document.getElementById("markdownInput").addEventListener("input", function () {
             const markdownContent = this.value;
             stompClient.send(`/app/edit`, { 'token': token }, markdownContent);
         });
     });
 
-    // Update preview dynamically as the user types
     document.getElementById("markdownInput").addEventListener("input", function () {
         const preview = document.getElementById("preview");
         preview.innerHTML = marked.parse(this.value);
-
-        // Add Play buttons next to Python code blocks after rendering
         addPlayButtons();
     });
 
-    // Function to add Play buttons next to Python code blocks
+    document.getElementById('markdownInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+
+            // set textarea value to: text before caret + tab + text after caret
+            this.value = this.value.substring(0, start) +
+                "\t" + this.value.substring(end);
+
+            // put caret at right position again
+            this.selectionStart =
+                this.selectionEnd = start + 1;
+        }
+    });
+
     function addPlayButtons() {
-        // Find all python code blocks in the rendered markdown preview
         const pythonBlocks = document.querySelectorAll('pre code.language-python');
         pythonBlocks.forEach(block => {
-            // Check if a Play button already exists
             if (!block.nextElementSibling || !block.nextElementSibling.classList.contains('play-button')) {
-                // Create a play button
                 const playButton = document.createElement('button');
                 playButton.textContent = 'Play';
                 playButton.classList.add('play-button');
                 playButton.style.marginLeft = '10px';
-                // Add click event to the play button
                 playButton.addEventListener('click', function () {
                     const pythonCode = block.textContent.trim();
                     if (pythonCode) {
-                        // Make an API request to execute the Python code
                         executePythonCode(pythonCode);
                     }
                 });
-                // Append the play button next to the Python code block
                 block.parentNode.appendChild(playButton);
             }
         });
@@ -125,19 +172,16 @@
                 const textarea = document.getElementById("markdownInput");
                 const content = textarea.value;
 
-                // Normalize the Python code by trimming whitespace
                 const normalizedPythonCode = pythonCode.trim();
 
-                // Create a regex pattern that matches the code block more flexibly
                 const codeBlockPattern = new RegExp(
-                    `\`\`\`python\\s*${normalizedPythonCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\`\`\``,
+                        `\`\`\`python\\s*${normalizedPythonCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\`\`\``,
                     'g'
                 );
 
                 console.log("Looking for code block pattern:", codeBlockPattern);
                 console.log("Current textarea content:", content);
 
-                // Find the last match of the code block
                 let lastMatch;
                 let match;
                 while ((match = codeBlockPattern.exec(content)) !== null) {
@@ -150,25 +194,20 @@
                     const insertPosition = lastMatch.index + lastMatch[0].length;
                     const outputText = `\nOutput: <code>${result}</code>\n`;
 
-                    // Check if output already exists and remove it
                     const afterCodeBlock = content.substring(insertPosition);
                     const existingOutputMatch = afterCodeBlock.match(/\nOutput: <code>.*<\/code>\n/);
 
                     let newContent;
                     if (existingOutputMatch && existingOutputMatch.index === 0) {
-                        // Replace existing output
                         newContent = content.substring(0, insertPosition) + outputText +
                             content.substring(insertPosition + existingOutputMatch[0].length);
                     } else {
-                        // Insert new output
                         newContent = content.substring(0, insertPosition) + outputText +
                             content.substring(insertPosition);
                     }
 
-                    // Update the textarea
                     textarea.value = newContent;
 
-                    // Manually trigger the input event for WebSocket sync
                     const event = new Event('input');
                     textarea.dispatchEvent(event);
 
@@ -186,9 +225,5 @@
 
     /*]]>*/
 </script>
-
-
-
 </body>
 </html>
-
