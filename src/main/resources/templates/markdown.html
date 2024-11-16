@@ -5,6 +5,13 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/python.min.js"></script> <!-- Optional: Add language support -->
+
     <style>
         #container {
             display: flex;
@@ -42,16 +49,56 @@
 <body>
 <h1>Collaborative Markdown Editor</h1>
 <div>
-    <h1>Edit Markdown</h1>
+    <h2>Edit Markdown</h2>
     <div class="button-container">
         <button onclick="downloadMarkdown()" class="download-button">Download Markdown</button>
+        <button onclick="downloadPDF()" class="download-button">Download as PDF</button>
     </div>
     <textarea id="markdownInput" th:text="${content}"></textarea>
     <div id="preview"></div>
 </div>
 <script th:inline="javascript">
     /*<![CDATA[*/
-    const token = /*[[${token}]]*/ '';
+    async function downloadPDF() {
+        const { jsPDF } = window.jspdf; // Ensure jsPDF is loaded
+        const markdownText = document.getElementById('markdownInput').value;
+
+        // Convert Markdown to HTML
+        const htmlContent = marked.parse(markdownText);
+
+        // Create a container element for rendering
+        const tempDiv = document.createElement('div');
+        tempDiv.style.width = '800px'; // Ensure consistent width
+        tempDiv.style.padding = '10px';
+        tempDiv.innerHTML = htmlContent;
+        document.body.appendChild(tempDiv);
+
+        // Initialize jsPDF
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'px',
+            format: 'a4',
+        });
+
+        // Set font style and size
+        pdf.setFont("helvetica", "normal"); // Set font family and style (e.g., "normal", "bold", "italic")
+        pdf.setFontSize(10); // Adjust the font size (default is 16)
+
+        // Render HTML to PDF
+        await pdf.html(tempDiv, {
+            callback: function (doc) {
+                doc.save('markdown.pdf');
+                document.body.removeChild(tempDiv); // Clean up the temporary element
+            },
+            x: 10,
+            y: 10,
+            width: 190, // Adjust width to fit content within the PDF
+        });
+    }
+
+
+
+    const token = /*[[${token}]]*/ ''; // Token initialization
 
     // Add download function
     function downloadMarkdown() {
@@ -100,8 +147,6 @@
             const preview = document.getElementById("preview");
             textarea.value = markdownContent;
             preview.innerHTML = marked.parse(markdownContent);
-
-            addPlayButtons();
         });
 
         document.getElementById("markdownInput").addEventListener("input", function () {
@@ -113,116 +158,7 @@
     document.getElementById("markdownInput").addEventListener("input", function () {
         const preview = document.getElementById("preview");
         preview.innerHTML = marked.parse(this.value);
-        addPlayButtons();
     });
-
-    document.getElementById('markdownInput').addEventListener('keydown', function(e) {
-        if (e.key === 'Tab') {
-            e.preventDefault();
-            const start = this.selectionStart;
-            const end = this.selectionEnd;
-
-            // set textarea value to: text before caret + tab + text after caret
-            this.value = this.value.substring(0, start) +
-                "\t" + this.value.substring(end);
-
-            // put caret at right position again
-            this.selectionStart =
-                this.selectionEnd = start + 1;
-        }
-    });
-
-    function addPlayButtons() {
-        const pythonBlocks = document.querySelectorAll('pre code.language-python');
-        pythonBlocks.forEach(block => {
-            if (!block.nextElementSibling || !block.nextElementSibling.classList.contains('play-button')) {
-                const playButton = document.createElement('button');
-                playButton.textContent = 'Play';
-                playButton.classList.add('play-button');
-                playButton.style.marginLeft = '10px';
-                playButton.addEventListener('click', function () {
-                    const pythonCode = block.textContent.trim();
-                    if (pythonCode) {
-                        executePythonCode(pythonCode);
-                    }
-                });
-                block.parentNode.appendChild(playButton);
-            }
-        });
-    }
-
-    function executePythonCode(pythonCode) {
-        fetch('/api/python/execute', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ pythonCode: pythonCode })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to execute Python code');
-                }
-                return response.text();
-            })
-            .then(result => {
-                console.log("Python code executed:", result);
-
-                const textarea = document.getElementById("markdownInput");
-                const content = textarea.value;
-
-                const normalizedPythonCode = pythonCode.trim();
-
-                const codeBlockPattern = new RegExp(
-                        `\`\`\`python\\s*${normalizedPythonCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\`\`\``,
-                    'g'
-                );
-
-                console.log("Looking for code block pattern:", codeBlockPattern);
-                console.log("Current textarea content:", content);
-
-                let lastMatch;
-                let match;
-                while ((match = codeBlockPattern.exec(content)) !== null) {
-                    lastMatch = match;
-                }
-
-                if (lastMatch) {
-                    console.log("Found code block at position:", lastMatch.index);
-
-                    const insertPosition = lastMatch.index + lastMatch[0].length;
-                    const outputText = `\nOutput: <code>${result}</code>\n`;
-
-                    const afterCodeBlock = content.substring(insertPosition);
-                    const existingOutputMatch = afterCodeBlock.match(/\nOutput: <code>.*<\/code>\n/);
-
-                    let newContent;
-                    if (existingOutputMatch && existingOutputMatch.index === 0) {
-                        newContent = content.substring(0, insertPosition) + outputText +
-                            content.substring(insertPosition + existingOutputMatch[0].length);
-                    } else {
-                        newContent = content.substring(0, insertPosition) + outputText +
-                            content.substring(insertPosition);
-                    }
-
-                    textarea.value = newContent;
-
-                    const event = new Event('input');
-                    textarea.dispatchEvent(event);
-
-                    console.log("Updated textarea content:", newContent);
-                } else {
-                    console.error("Could not find matching code block in content");
-                    console.log("Python code being searched for:", normalizedPythonCode);
-                }
-            })
-            .catch(error => {
-                console.error("Error executing Python code:", error);
-                alert('Error executing Python code.');
-            });
-    }
-
     /*]]>*/
 </script>
 </body>
