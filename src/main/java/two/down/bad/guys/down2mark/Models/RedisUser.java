@@ -1,4 +1,4 @@
-package Models;
+package two.down.bad.guys.down2mark.Models;
 
 import lombok.Getter;
 import lombok.Setter;
