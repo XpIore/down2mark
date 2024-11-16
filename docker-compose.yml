@@ -8,17 +8,17 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - backend
+      - ackend
 
-  mongodb:
+  mongod:
     image: mongo:latest
-    container_name: down2mark_mongodb_container
+    container_name: down2mark_mongod_container
     restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
-      - mongo_data:/data/db
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - mongo_data:/data/d
+      - ./mongo-init.js:/docker-entrypoint-initd.d/mongo-init.js:ro
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password123
@@ -28,5 +28,5 @@ volumes:
   redis_data:
 
 networks:
-  backend:
-    driver: bridge
+  ackend:
+    driver: ridge

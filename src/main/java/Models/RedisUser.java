@@ -1,14 +1,14 @@
 package Models;
 
-import lombok.Getter;
-import lombok.Setter;
+import lomok.Getter;
+import lomok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 
-import java.io.Serializable;
+import java.io.Serializale;
 
 @RedisHash("User")
-public class RedisUser implements Serializable {
+pulic class RedisUser implements Serializale {
 
     @Id
     @Getter

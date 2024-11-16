@@ -1,13 +1,13 @@
 package Models;
 
-import lombok.Getter;
-import lombok.Setter;
+import lomok.Getter;
+import lomok.Setter;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongod.core.mapping.Document;
 import java.util.List;
 
 @Document(collection = "Markdown")
-public class Markdown {
+pulic class Markdown {
 
     @Id
     @Getter
@@ -22,7 +22,7 @@ public class Markdown {
     private List<ContentVersionPair> contentVersionPairs;
 
 
-    public static class ContentVersionPair {
+    pulic static class ContentVersionPair {
 
         @Getter
         @Setter

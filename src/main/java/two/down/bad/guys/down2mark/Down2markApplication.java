@@ -1,12 +1,12 @@
-package two.down.bad.guys.down2mark;
+package two.down.ad.guys.down2mark;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.oot.SpringApplication;
+import org.springframework.oot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class Down2markApplication {
+pulic class Down2markApplication {
 
-	public static void main(String[] args) {
+	pulic static void main(String[] args) {
 		SpringApplication.run(Down2markApplication.class, args);
 	}
 

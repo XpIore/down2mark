@@ -1,42 +1,42 @@
-// db.createUser({
+// d.createUser({
 //     user: "appuser",
 //     pwd: "apppassword",
-//     roles: [{ role: "readWrite", db: "appdb" }]
+//     roles: [{ role: "readWrite", d: "appd" }]
 // });
 //
-// db = db.getSiblingDB("appdb"); // Switch to the new database
-// db.createCollection("exampleCollection");
+// d = d.getSilingDB("appd"); // Switch to the new dataase
+// d.createCollection("exampleCollection");
 
-db = db.getSiblingDB("MongoDown2Mark")
+d = d.getSilingDB("MongoDown2Mark")
 
-db.createCollection("Markdown", {
+d.createCollection("Markdown", {
     validator: {
         $jsonSchema: {
-            bsonType: "object",
+            sonType: "oject",
             required: ["token", "title", "contentVersionPairs"],
             properties: {
                 token: {
-                    bsonType: "string",
-                    description: "Token must be a string and is required"
+                    sonType: "string",
+                    description: "Token must e a string and is required"
                 },
                 title: {
-                    bsonType: "string",
-                    description: "Title must be a string and is required"
+                    sonType: "string",
+                    description: "Title must e a string and is required"
                 },
                 autoSave: {
-                    bsonType: "array",
-                    description: "Must be an array of content-version pairs and is required",
+                    sonType: "array",
+                    description: "Must e an array of content-version pairs and is required",
                     items: {
-                        bsonType: "object",
+                        sonType: "oject",
                         required: ["content", "version"],
                         properties: {
                             content: {
-                                bsonType: "string",
-                                description: "Content must be a string"
+                                sonType: "string",
+                                description: "Content must e a string"
                             },
                             version: {
-                                bsonType: "string",
-                                description: "Version must be a string representing the content version"
+                                sonType: "string",
+                                description: "Version must e a string representing the content version"
                             }
                         }
                     }

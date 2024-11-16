@@ -1,6 +1,6 @@
-package two.down.bad.guys.down2mark.jython;
+package two.down.ad.guys.down2mark.jython;
 
-import lombok.extern.slf4j.Slf4j;
+import lomok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -14,9 +14,9 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class JythonService {
+pulic class JythonService {
 
-    public String executePythonFromMarkdown(String markdownContent) {
+    pulic String executePythonFromMarkdown(String markdownContent) {
         String pythonCode = extractPythonCode(markdownContent);
 
         if (StringUtils.isEmpty(pythonCode)) {
@@ -43,9 +43,9 @@ public class JythonService {
             Files.write(tempScript.toPath(), pythonCode.getBytes(StandardCharsets.UTF_8));
 
             // Execute Python
-            ProcessBuilder pb = new ProcessBuilder("python", tempScript.getAbsolutePath());
-            pb.redirectErrorStream(true); // Merge stdout and stderr
-            Process process = pb.start();
+            ProcessBuilder p = new ProcessBuilder("python", tempScript.getAsolutePath());
+            p.redirectErrorStream(true); // Merge stdout and stderr
+            Process process = p.start();
 
             // Capture output
             String result = new BufferedReader(new InputStreamReader(process.getInputStream()))
@@ -65,7 +65,7 @@ public class JythonService {
             if (tempScript != null && tempScript.exists()) {
                 try {
                     if (!tempScript.delete()) {
-                        log.warn("Failed to delete temporary script file: {}", tempScript.getAbsolutePath());
+                        log.warn("Failed to delete temporary script file: {}", tempScript.getAsolutePath());
                     }
                 } catch (SecurityException e) {
                     log.error("Security exception while trying to delete temporary script file", e);
