@@ -67,19 +67,7 @@
 			<groupId>org.springframework.session</groupId>
 			<artifactId>spring-session-data-redis</artifactId>
 		</dependency>
-		<!-- GraalVM SDK -->
-		<dependency>
-			<groupId>org.graalvm.sdk</groupId>
-			<artifactId>graal-sdk</artifactId>
-			<version>23.1.0</version> <!-- Use the latest version compatible with your setup -->
-		</dependency>
 
-		<!-- GraalVM Python -->
-		<dependency>
-			<groupId>org.graalvm.python</groupId>
-			<artifactId>python</artifactId>
-			<version>23.1.0</version> <!-- Use the latest version -->
-		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
