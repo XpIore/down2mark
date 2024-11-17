@@ -368,6 +368,7 @@
     let lastSaveTime = new Date();
     let lastContent = '';
     let autosaveTimer = null;
+    let lastCheckTime = new Date();
 
     function setupAutosave() {
         const textarea = document.getElementById("markdownInput");
@@ -398,6 +399,7 @@
     function performAutosave() {
         const textarea = document.getElementById("markdownInput");
         const currentContent = textarea.value || "";
+        lastCheckTime = new Date()
 
         // Only save if content has changed
         if (currentContent !== lastContent) {
@@ -429,7 +431,19 @@
                 });
         } else {
             console.log("No changes to save");
+            showNoUpdatesToSaveIndicator()
         }
+    }
+
+    function showNoUpdatesToSaveIndicator() {
+        const indicator = document.getElementById('saveIndicator');
+        indicator.style.display = 'block';
+        indicator.style.backgroundColor = '#2ba0a1';
+        indicator.textContent = 'Nothing to Autosave';
+
+        setTimeout(() => {
+            indicator.style.display = 'none';
+        }, 2000);
     }
 
     function showSaveIndicator() {
@@ -456,11 +470,16 @@
 
     function updateAutosaveStatus() {
         const statusElement = document.getElementById('autosaveStatus');
-        const timeSinceLastSave = new Date() - lastSaveTime;
-        const minutesUntilNextSave = Math.max(0, Math.ceil((AUTOSAVE_INTERVAL - timeSinceLastSave) / 60000));
+        const timeSinceLastSave = new Date() - lastCheckTime;
+        const timeUntilNextSave = Math.max(0, AUTOSAVE_INTERVAL - timeSinceLastSave);
 
-        statusElement.textContent = `Last save: ${lastSaveTime.toLocaleTimeString()} | Next save in: ${minutesUntilNextSave} min`;
+        const secondsUntilNextSave = Math.ceil(timeUntilNextSave / 1000); // Convert milliseconds to seconds
+        const minutes = Math.floor(secondsUntilNextSave / 60);
+        const seconds = secondsUntilNextSave % 60;
+
+        statusElement.textContent = `Last save: ${lastSaveTime.toLocaleTimeString()} | Next save in: ${minutes} min ${seconds} sec`;
     }
+
 
     stompClient.connect({}, function () {
         console.log(`Connected with token: ${token}`);
@@ -583,7 +602,7 @@
     }
     renderMarkdown();
     // Update the status display every minute
-    setInterval(updateAutosaveStatus, 10000);
+    setInterval(updateAutosaveStatus, 1000);
 
     // For testing purposes, you can uncomment this line to use a shorter interval (1 minute)
     // AUTOSAVE_INTERVAL = 60 * 1000;
