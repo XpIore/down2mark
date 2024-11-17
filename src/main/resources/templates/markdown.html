@@ -314,6 +314,13 @@
         }
     }
 
+    function cleanMarkdown(input) {
+        // Remove trailing spaces
+        input = input.replace(/[ \t]+$/gm, '');
+        // Normalize list indentation
+        input = input.replace(/^(\s*)[⋅⋅*+-]/gm, (match, p1) => p1 + '*');
+        return input;
+    }
 
 
 
@@ -336,16 +343,21 @@
     async function downloadPDF() {
         const { jsPDF } = window.jspdf;
         const markdownText = document.getElementById('markdownInput').value;
-        const htmlContent = marked.parse(markdownText);
+        const cleanedMarkdown = cleanMarkdown(markdownText);
+        const htmlContent = marked.parse(cleanedMarkdown);
+
         const tempDiv = document.createElement('div');
         tempDiv.style.width = '800px';
-        tempDiv.style.padding = '10px';
+        tempDiv.style.padding = '13px';
+        tempDiv.style.fontSize = '13px'; // Smaller font for compact content
         tempDiv.innerHTML = htmlContent;
         document.body.appendChild(tempDiv);
 
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' });
-        pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(10);
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'px',
+            format: 'a4',
+        });
 
         await pdf.html(tempDiv, {
             callback: function (doc) {
@@ -355,8 +367,13 @@
             x: 10,
             y: 10,
             width: 190,
+            html2canvas: {
+                scale: 0.7, // Ensure smaller rendered content
+            },
         });
     }
+
+
 
     // WebSocket setup
     const socket = new SockJS('/ws');
@@ -504,15 +521,20 @@
     function renderMarkdown() {
         const markdownInput = document.getElementById('markdownInput').value;
         const preview = document.getElementById('preview');
-        const htmlContent = marked.parse(markdownInput);
+        const cleanedMarkdown = cleanMarkdown(markdownInput);
+
+        const htmlContent = marked.parse(cleanedMarkdown, {
+            breaks: true, // Enable GFM-style line breaks
+        });
         preview.innerHTML = htmlContent;
 
         document.querySelectorAll('pre code').forEach((block) => {
             hljs.highlightElement(block);
         });
 
-        addPlayButtons();
+        addPlayButtons(); // Retain the additional functionality
     }
+
 
     document.getElementById("markdownInput").addEventListener("input", renderMarkdown);
 
