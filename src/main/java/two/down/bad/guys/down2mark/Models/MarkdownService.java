@@ -24,6 +24,9 @@ public class MarkdownService {
 
         if (document == null) {
             // Create a new document if it doesn't exist
+            if (content == null) {
+                content = "";
+            }
             document = createNewDocument(token, "Untitled", content);
         }
 
@@ -65,6 +68,36 @@ public class MarkdownService {
             throw new RuntimeException("Document not found for token: " + token);
         }
         return document.getContentVersionPairs();
+    }
+
+    /**
+     * Reverts the document to its previous state by removing the latest version.
+     *
+     * @param token the token of the document to revert
+     * @return the latest version that was removed
+     */
+    public MarkdownDocument.ContentVersionPair revertToPreviousVersion(String token) {
+        MarkdownDocument document = markdownRepository.findByToken(token);
+
+        if (document == null) {
+            throw new RuntimeException("Document not found for token: " + token);
+        }
+
+        List<MarkdownDocument.ContentVersionPair> contentVersionPairs = document.getContentVersionPairs();
+
+        if (contentVersionPairs.isEmpty()) {
+            throw new RuntimeException("No versions available to revert.");
+        }
+
+        // Get the latest version (last in the list)
+        MarkdownDocument.ContentVersionPair latestVersion = contentVersionPairs.remove(contentVersionPairs.size() - 1);
+
+        // Update the document in the database
+        document.setContentVersionPairs(contentVersionPairs);
+        markdownRepository.save(document);
+
+        // Return the latest version that was removed
+        return latestVersion;
     }
 }
 

@@ -218,7 +218,14 @@
             <button onclick="downloadPDF()" class="editor-btn editor-btn-secondary">
                 <i class="fas fa-file-pdf"></i> Download PDF
             </button>
+            <button onclick="revertToLatestVersion()" class="editor-btn editor-btn-primary">
+                <i class="fas fa-undo"></i> Revert to Latest
+            </button>
+            <button onclick="manualSave()" class="editor-btn editor-btn-secondary">
+                <i class="fas fa-save"></i> Save Manually
+            </button>
         </div>
+
 
         <div class="editor-workspace">
             <textarea id="markdownInput" placeholder="Start typing your markdown here..." th:text="${content}"></textarea>
@@ -248,6 +255,67 @@
     if (!token) {
         console.error("Token is missing");
     }
+
+    function manualSave() {
+        const textarea = document.getElementById("markdownInput");
+        const content = textarea.value || "";
+
+        console.log("Performing manual save...");
+
+        fetch(`/api/markdown/save/${token}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain',
+            },
+            body: content
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Manual save failed');
+                }
+                return response.json();
+            })
+            .then(() => {
+                lastSaveTime = new Date();
+                lastContent = content;
+                showSaveIndicator();
+                updateAutosaveStatus();
+                console.log("Manual save successful");
+            })
+            .catch(error => {
+                console.error('Manual save error:', error);
+                showSaveError();
+            });
+    }
+
+    async function revertToLatestVersion() {
+        try {
+            const response = await fetch(`/api/markdown/revert/${token}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.status === 204) {
+                alert('No version available to revert to.');
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error('Failed to revert to the latest version');
+            }
+
+            // Success message
+            alert('Reverted to the latest saved version.');
+        } catch (error) {
+            console.error('Error during revert:', error);
+            alert('An error occurred while reverting to the latest version.');
+        }
+    }
+
+
+
 
     // Download Markdown file
     function downloadMarkdown() {
@@ -296,14 +364,14 @@
 
     // Add this script right after your existing WebSocket setup
 
-    const AUTOSAVE_INTERVAL = 10 * 1000; // 60 minutes in milliseconds
+    const AUTOSAVE_INTERVAL = 60 * 1000; // 60 minutes in milliseconds
     let lastSaveTime = new Date();
     let lastContent = '';
     let autosaveTimer = null;
 
     function setupAutosave() {
         const textarea = document.getElementById("markdownInput");
-        lastContent = textarea.value;
+        lastContent = textarea.value || "";
 
         // Clear any existing timer
         if (autosaveTimer) {
@@ -329,7 +397,7 @@
 
     function performAutosave() {
         const textarea = document.getElementById("markdownInput");
-        const currentContent = textarea.value;
+        const currentContent = textarea.value || "";
 
         // Only save if content has changed
         if (currentContent !== lastContent) {
