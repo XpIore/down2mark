@@ -265,7 +265,7 @@
 <div class="container-fluid">
     <div class="editor-container">
         <div class="title-section">
-            <h1>Collaborative Markdown Editor</h1>
+            <h1>Down2Mark</h1>
             <p class="text-muted">Real-time markdown editing and preview</p>
         </div>
 
@@ -655,20 +655,106 @@
 
     // Render Markdown and apply Highlight.js
     function renderMarkdown() {
+        // Configure marked options to allow HTML and handle images
+        marked.setOptions({
+            breaks: true,          // Enable GFM-style line breaks
+            headerIds: true,       // Generate IDs for headings
+            mangle: false,         // Don't escape HTML
+            headerPrefix: '',      // Prefix for header IDs
+            highlight: function (code, language) {
+                if (language && hljs.getLanguage(language)) {
+                    return hljs.highlight(code, { language }).value;
+                } else {
+                    return hljs.highlightAuto(code).value;
+                }
+            },
+            sanitize: false,      // Allow HTML content
+            sanitizer: function(html) {
+                // Custom sanitizer function to only allow specific HTML tags and attributes
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                // Function to sanitize elements recursively
+                const sanitizeElement = (element) => {
+                    // List of allowed tags
+                    const allowedTags = ['img', 'p', 'br', 'b', 'i', 'strong', 'em', 'code', 'pre'];
+                    // List of allowed attributes for img tags
+                    const allowedImgAttributes = ['src', 'alt', 'title', 'width', 'height'];
+
+                    if (!allowedTags.includes(element.tagName.toLowerCase())) {
+                        return document.createTextNode(element.textContent);
+                    }
+
+                    // Special handling for img tags
+                    if (element.tagName.toLowerCase() === 'img') {
+                        const newImg = document.createElement('img');
+                        // Only copy allowed attributes
+                        allowedImgAttributes.forEach(attr => {
+                            if (element.hasAttribute(attr)) {
+                                newImg.setAttribute(attr, element.getAttribute(attr));
+                            }
+                        });
+                        return newImg;
+                    }
+
+                    // For other allowed tags, copy the element and sanitize its children
+                    const newElement = document.createElement(element.tagName);
+                    Array.from(element.childNodes).forEach(child => {
+                        if (child.nodeType === Node.ELEMENT_NODE) {
+                            newElement.appendChild(sanitizeElement(child));
+                        } else if (child.nodeType === Node.TEXT_NODE) {
+                            newElement.appendChild(document.createTextNode(child.textContent));
+                        }
+                    });
+                    return newElement;
+                };
+
+                // Sanitize all elements in the document
+                const sanitizedElements = Array.from(doc.body.childNodes).map(node => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        return sanitizeElement(node);
+                    }
+                    return document.createTextNode(node.textContent);
+                });
+
+                // Combine sanitized elements into HTML string
+                const container = document.createElement('div');
+                sanitizedElements.forEach(element => container.appendChild(element));
+                return container.innerHTML;
+            }
+        });
+
         const markdownInput = document.getElementById('markdownInput').value;
         const preview = document.getElementById('preview');
         const cleanedMarkdown = cleanMarkdown(markdownInput);
 
-        const htmlContent = marked.parse(cleanedMarkdown, {
-            breaks: true, // Enable GFM-style line breaks
-        });
-        preview.innerHTML = htmlContent;
+        try {
+            const htmlContent = marked.parse(cleanedMarkdown);
+            preview.innerHTML = htmlContent;
 
-        document.querySelectorAll('pre code').forEach((block) => {
-            hljs.highlightElement(block);
-        });
+            // Apply syntax highlighting to code blocks
+            document.querySelectorAll('pre code').forEach((block) => {
+                hljs.highlightElement(block);
+            });
 
-        addPlayButtons(); // Retain the additional functionality
+            // Add play buttons to Python code blocks
+            addPlayButtons();
+
+            // Add error handling for images
+            document.querySelectorAll('#preview img').forEach(img => {
+                img.onerror = function() {
+                    this.style.border = '1px solid red';
+                    this.style.padding = '10px';
+                    this.style.display = 'inline-block';
+                    this.style.width = 'auto';
+                    this.style.height = 'auto';
+                    this.alt = 'Failed to load image: ' + this.alt;
+                };
+            });
+        } catch (error) {
+            console.error('Error rendering markdown:', error);
+            preview.innerHTML = '<div class="alert alert-danger">Error rendering markdown content</div>';
+        }
     }
 
 
